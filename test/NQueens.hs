@@ -1,4 +1,5 @@
-import Data.List (tails)
+module NQueens (main) where
+
 import GeneticAlgorithm (
     Fitness,
     GAConfig (..),
@@ -6,33 +7,36 @@ import GeneticAlgorithm (
     MkRand,
     geneticAlgorithm,
  )
-import GeneticAlgorithm.GeneticOpperators
-import GeneticAlgorithm.Merge
-import GeneticAlgorithm.Selection
-import GeneticAlgorithm.Shared.Types
-import GeneticAlgorithm.Stop (stopExact)
-import GeneticAlgorithm.Utility
+import GeneticAlgorithm.GeneticOpperators (
+    mutationBySwapConfig,
+    permCrossoverConfig,
+ )
+import GeneticAlgorithm.Merge (distinctOrderedMerge)
+import GeneticAlgorithm.Selection (rselection)
+import GeneticAlgorithm.Shared.Types (Eval, Pop, Seed)
+import GeneticAlgorithm.Stop (fitnessStop)
+import GeneticAlgorithm.Utility (shuffle)
 
-type NQueen = Int
-type Row = Int
-type Column = Int
-type Board = [Column]
-type Board2D = [(Row, Column)]
+type Board = [Int]
 
-randQueen :: NQueen -> MkRand Board
-randQueen size seed = shuffle seed [1 .. size]
+mkRandQueen :: Int -> MkRand Board
+mkRandQueen n seed = shuffle seed [1 .. n]
 
-qfitness :: Fitness Board
-qfitness b = length $ concatMap f ((init . tails) (to2DBoard b))
+qFitness :: Fitness Board
+qFitness board = length (filter diagonalConflict pairs)
   where
-    f (q : qs) = filter (takes q) qs
-    f [] = []
+    queenPositions = zip [1 ..] board -- [(Row, Column)]
+    pairs = allPairs queenPositions
 
-to2DBoard :: Board -> Board2D
-to2DBoard = zip [1 ..]
+-- Check if two queens are in conflict
+diagonalConflict :: ((Int, Int), (Int, Int)) -> Bool
+diagonalConflict ((row1, col1), (row2, col2)) =
+    abs (row1 - row2) == abs (col1 - col2)
 
-takes :: (Row, Column) -> (Row, Column) -> Bool
-takes (r1, c1) (r2, c2) = abs (r1 - r2) == abs (c1 - c2)
+-- Generate all unique (q1, q2) pairs from the list
+allPairs :: [a] -> [(a, a)]
+allPairs [] = []
+allPairs (x : xs) = [(x, y) | y <- xs] ++ allPairs xs
 
 gaForQueens :: Int -> Int -> Int -> (Float, Float) -> Seed -> [Pop (Eval Board)]
 gaForQueens n mg ps (xPro, mPro) =
@@ -41,16 +45,16 @@ gaForQueens n mg ps (xPro, mPro) =
             { maxGenerations = mg
             , popSize = ps
             , chromSize = n
-            , initialPopulation = RandChrom (randQueen n)
-            , fitness = qfitness
+            , initialPopulation = RandChrom (mkRandQueen n)
+            , fitness = qFitness
             , selection = rselection
             , operators = [permCrossoverConfig xPro, mutationBySwapConfig mPro]
             , merge = distinctOrderedMerge
-            , stop = stopExact 0
+            , stop = fitnessStop 0
             }
 
-mainn :: Int -> IO ()
-mainn n = do
+main :: Int -> IO ()
+main n = do
     let seed = 123456
         mg = 50
         ps = 500

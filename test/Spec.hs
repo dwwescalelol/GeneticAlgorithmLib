@@ -5,7 +5,7 @@ import GeneticAlgorithm.GeneticOpperators
 import GeneticAlgorithm.Merge
 import GeneticAlgorithm.Selection (rselection)
 import GeneticAlgorithm.Shared.Types
-import GeneticAlgorithm.Stop (stopMax)
+import GeneticAlgorithm.Stop (fitnessStop)
 
 type TestType = [Int]
 
@@ -58,7 +58,7 @@ testGAConfig =
         , selection = rselection
         , operators = [dummyOp 0.5, dummyOp2 0.5]
         , merge = concatMerge
-        , stop = stopMax 20
+        , stop = fitnessStop 20
         }
 
 testEvolveMeta :: EvolveMeta TestType
